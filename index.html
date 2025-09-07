@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lumen Notes | Beautiful Note Taking App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/feather-icons"></script>
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-light: #818cf8;
+            --primary-dark: #4f46e5;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        .note-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        .tag {
+            transition: all 0.2s ease;
+        }
+        .tag:hover {
+            background-color: var(--primary-light);
+            color: white;
+        }
+        .markdown-content h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin: 1rem 0;
+        }
+        .markdown-content h2 {
+            font-size: 1.25rem;
+            font-weight: 500;
+            margin: 0.75rem 0;
+        }
+        .markdown-content ul {
+            list-style-type: disc;
+            padding-left: 1.5rem;
+            margin: 0.5rem 0;
+        }
+        .markdown-content ol {
+            list-style-type: decimal;
+            padding-left: 1.5rem;
+            margin: 0.5rem 0;
+        }
+        .markdown-content pre {
+            background-color: #f1f5f9;
+            padding: 0.75rem;
+            border-radius: 0.375rem;
+            overflow-x: auto;
+        }
+        .markdown-content code {
+            font-family: monospace;
+            background-color: #f1f5f9;
+            padding: 0.2rem 0.4rem;
+            border-radius: 0.25rem;
+        }
+        .markdown-content blockquote {
+            border-left: 4px solid #e2e8f0;
+            padding-left: 1rem;
+            color: #64748b;
+            margin: 0.5rem 0;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gray-50">
+    <div class="fixed inset-0 -z-10 overflow-hidden opacity-20">
+        <div class="absolute inset-0 bg-gradient-to-br from-indigo-100 to-purple-100"></div>
+    </div>
+
+    <header class="bg-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center">
+                    <i data-feather="edit-3" class="text-indigo-500 mr-2"></i>
+                    <h1 class="text-xl font-bold text-gray-800">Lumen Notes</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button id="theme-toggle" class="p-2 rounded-full hover:bg-gray-100">
+                        <i data-feather="moon" class="text-gray-600"></i>
+                    </button>
+                    <button id="new-note-btn" class="flex items-center px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition">
+                        <i data-feather="plus" class="mr-2"></i>
+                        New Note
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <!-- Sidebar -->
+            <div class="md:col-span-1">
+                <div class="bg-white rounded-xl shadow-sm p-4 sticky top-8">
+                    <div class="mb-6">
+                        <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Search</h2>
+                        <div class="relative">
+                            <input type="text" id="search-notes" placeholder="Search notes..." class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                            <i data-feather="search" class="absolute left-3 top-2.5 text-gray-400"></i>
+                        </div>
+                    </div>
+
+                    <div class="mb-6">
+                        <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Tags</h2>
+                        <div id="tags-container" class="flex flex-wrap gap-2">
+                            <!-- Tags will be populated here -->
+                        </div>
+                        <div class="mt-2">
+                            <input type="text" id="new-tag-input" placeholder="Add tag..." class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+                    </div>
+
+                    <div>
+                        <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Stats</h2>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div class="bg-gray-50 p-3 rounded-lg">
+                                <p class="text-xs text-gray-500">Total Notes</p>
+                                <p id="total-notes" class="text-lg font-semibold">0</p>
+                            </div>
+                            <div class="bg-gray-50 p-3 rounded-lg">
+                                <p class="text-xs text-gray-500">Words</p>
+                                <p id="total-words" class="text-lg font-semibold">0</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notes List -->
+            <div class="md:col-span-1">
+                <div class="bg-white rounded-xl shadow-sm p-4">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-lg font-semibold text-gray-800">All Notes</h2>
+                        <div class="flex items-center space-x-2">
+                            <button id="sort-by-date" class="p-2 rounded-full hover:bg-gray-100 text-gray-600">
+                                <i data-feather="calendar"></i>
+                            </button>
+                            <button id="sort-by-title" class="p-2 rounded-full hover:bg-gray-100 text-gray-600">
+                                <i data-feather="type"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="notes-list" class="space-y-3 max-h-[calc(100vh-200px)] overflow-y-auto">
+                        <!-- Notes will be populated here -->
+                        <div class="text-center py-10 text-gray-400">
+                            <i data-feather="file-text" class="w-12 h-12 mx-auto mb-2"></i>
+                            <p>No notes yet. Create your first note!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Note Editor -->
+            <div class="md:col-span-2">
+                <div id="note-editor" class="bg-white rounded-xl shadow-sm overflow-hidden">
+                    <div id="empty-state" class="p-10 text-center">
+                        <i data-feather="edit-3" class="w-16 h-16 mx-auto text-gray-300 mb-4"></i>
+                        <h3 class="text-lg font-medium text-gray-500 mb-2">Select a note to edit</h3>
+                        <p class="text-gray-400 mb-4">Or create a new one to get started</p>
+                        <button id="empty-new-note-btn" class="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition">
+                            Create New Note
+                        </button>
+                    </div>
+
+                    <div id="editor-container" class="hidden h-full flex flex-col">
+                        <div class="border-b border-gray-200 p-4">
+                            <input type="text" id="note-title" placeholder="Note title" class="w-full text-xl font-semibold border-none focus:ring-0 px-0">
+                            <div class="flex items-center justify-between mt-2">
+                                <div class="flex items-center space-x-2">
+                                    <span id="note-date" class="text-xs text-gray-500"></span>
+                                    <span id="word-count" class="text-xs text-gray-500">0 words</span>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <button id="delete-note" class="p-1.5 rounded-full hover:bg-red-50 text-red-400">
+                                        <i data-feather="trash-2"></i>
+                                    </button>
+                                    <button id="pin-note" class="p-1.5 rounded-full hover:bg-gray-100 text-gray-400">
+                                        <i data-feather="star"></i>
+                                    </button>
+                                    <button id="export-note" class="p-1.5 rounded-full hover:bg-gray-100 text-gray-400">
+                                        <i data-feather="download"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex border-b border-gray-200">
+                            <button data-format="bold" class="p-2 hover:bg-gray-100 text-gray-600">
+                                <i data-feather="bold"></i>
+                            </button>
+                            <button data-format="italic" class="p-2 hover:bg-gray-100 text-gray-600">
+                                <i data-feather="italic"></i>
+                            </button>
+                            <button data-format="heading" class="p-2 hover:bg-gray-100 text-gray-600">
+                                <i data-feather="heading"></i>
+                            </button>
+                            <button data-format="quote" class="p-2 hover:bg-gray-100 text-gray-600">
+                                <i data-feather="quote"></i>
+                            </button>
+                            <button data-format="code" class="p-2 hover:bg-gray-100 text-gray-600">
+                                <i data-feather="code"></i>
+                            </button>
+                            <button data-format="list" class="p-2 hover:bg-gray-100 text-gray-600">
+                                <i data-feather="list"></i>
+                            </button>
+                            <button data-format="numbered-list" class="p-2 hover:bg-gray-100 text-gray-600">
+                                <i data-feather="list-ordered"></i>
+                            </button>
+                            <button data-format="link" class="p-2 hover:bg-gray-100 text-gray-600">
+                                <i data-feather="link"></i>
+                            </button>
+                            <button data-format="image" class="p-2 hover:bg-gray-100 text-gray-600">
+                                <i data-feather="image"></i>
+                            </button>
+                        </div>
+
+                        <div id="editor" contenteditable="true" class="flex-1 p-4 overflow-y-auto focus:outline-none min-h-[300px] markdown-content"></div>
+
+                        <div class="border-t border-gray-200 p-3">
+                            <div class="flex items-center">
+                                <input type="text" id="note-tags-input" placeholder="Add tags..." class="flex-1 px-3 py-1.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                                <button id="save-note" class="ml-2 px-4 py-1.5 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition">
+                                    Save
+                                </button>
+                            </div>
+                            <div id="note-tags-container" class="flex flex-wrap gap-2 mt-2">
+                                <!-- Note tags will be displayed here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            feather.replace();
+            
+            // Initialize app
+            const app = {
+                notes: JSON.parse(localStorage.getItem('lumen-notes')) || [],
+                currentNote: null,
+                tags: JSON.parse(localStorage.getItem('lumen-tags')) || [],
+                darkMode: localStorage.getItem('lumen-dark-mode') === 'true' || false,
+                
+                init() {
+                    this.setupEventListeners();
+                    this.loadNotes();
+                    this.updateStats();
+                    this.loadTags();
+                    this.applyTheme();
+                },
+                
+                setupEventListeners() {
+                    // New note buttons
+                    document.getElementById('new-note-btn').addEventListener('click', () => this.createNewNote());
+                    document.getElementById('empty-new-note-btn').addEventListener('click', () => this.createNewNote());
+                    
+                    // Note list interactions
+                    document.getElementById('search-notes').addEventListener('input', (e) => this.searchNotes(e.target.value));
+                    document.getElementById('sort-by-date').addEventListener('click', () => this.sortNotes('date'));
+                    document.getElementById('sort-by-title').addEventListener('click', () => this.sortNotes('title'));
+                    
+                    // Editor interactions
+                    document.getElementById('save-note').addEventListener('click', () => this.saveCurrentNote());
+                    document.getElementById('delete-note').addEventListener('click', () => this.deleteCurrentNote());
+                    document.getElementById('pin-note').addEventListener('click', () => this.togglePinCurrentNote());
+                    document.getElementById('export-note').addEventListener('click', () => this.exportCurrentNote());
+                    document.getElementById('editor').addEventListener('input', () => this.updateWordCount());
+                    
+                    // Formatting buttons
+                    document.querySelectorAll('[data-format]').forEach(btn => {
+                        btn.addEventListener('click', (e) => this.applyFormatting(e.target.closest('button').dataset.format));
+                    });
+                    
+                    // Tags
+                    document.getElementById('new-tag-input').addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter') this.createTag(e.target.value);
+                    });
+                    document.getElementById('note-tags-input').addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter') this.addTagToCurrentNote(e.target.value);
+                    });
+                    
+                    // Theme toggle
+                    document.getElementById('theme-toggle').addEventListener('click', () => this.toggleTheme());
+                },
+                
+                loadNotes() {
+                    const notesList = document.getElementById('notes-list');
+                    notesList.innerHTML = '';
+                    
+                    if (this.notes.length === 0) {
+                        notesList.innerHTML = `
+                            <div class="text-center py-10 text-gray-400">
+                                <i data-feather="file-text" class="w-12 h-12 mx-auto mb-2"></i>
+                                <p>No notes yet. Create your first note!</p>
+                            </div>
+                        `;
+                        feather.replace();
+                        return;
+                    }
+                    
+                    // Sort pinned notes first
+                    const sortedNotes = [...this.notes].sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
+                    
+                    sortedNotes.forEach(note => {
+                        const noteElement = document.createElement('div');
+                        noteElement.className = `note-card p-3 border border-gray-200 rounded-lg cursor-pointer hover:shadow-md transition ${note.pinned ? 'bg-indigo-50 border-indigo-200' : 'bg-white'}`;
+                        noteElement.dataset.id = note.id;
+                        
+                        const previewText = note.content.replace(/<[^>]*>/g, '').substring(0, 100);
+                        const date = new Date(note.updatedAt).toLocaleDateString();
+                        
+                        noteElement.innerHTML = `
+                            <div class="flex justify-between items-start">
+                                <h3 class="font-medium truncate">${note.title || 'Untitled Note'}</h3>
+                                ${note.pinned ? '<i data-feather="star" class="w-4 h-4 text-indigo-500"></i>' : ''}
+                            </div>
+                            <p class="text-sm text-gray-500 mt-1 truncate">${previewText}</p>
+                            <div class="flex justify-between items-center mt-2">
+                                <span class="text-xs text-gray-400">${date}</span>
+                                <div class="flex space-x-1">
+                                    ${note.tags && note.tags.length > 0 ? 
+                                        `<span class="text-xs px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded-full">${note.tags[0]}</span>` : 
+                                        ''}
+                                    ${note.tags && note.tags.length > 1 ? '<span class="text-xs text-gray-400">+' + (note.tags.length - 1) + '</span>' : ''}
+                                </div>
+                            </div>
+                        `;
+                        
+                        noteElement.addEventListener('click', () => this.openNote(note.id));
+                        notesList.appendChild(noteElement);
+                    });
+                    
+                    feather.replace();
+                },
+                
+                createNewNote() {
+                    const newNote = {
+                        id: Date.now().toString(),
+                        title: '',
+                        content: '',
+                        tags: [],
+                        pinned: false,
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString()
+                    };
+                    
+                    this.notes.unshift(newNote);
+                    this.saveNotes();
+                    this.openNote(newNote.id);
+                    this.loadNotes();
+                    this.updateStats();
+                    
+                    // Focus on title field
+                    setTimeout(() => {
+                        document.getElementById('note-title').focus();
+                    }, 100);
+                },
+                
+                openNote(noteId) {
+                    const note = this.notes.find(n => n.id === noteId);
+                    if (!note) return;
+                    
+                    this.currentNote = note;
+                    
+                    // Hide empty state, show editor
+                    document.getElementById('empty-state').classList.add('hidden');
+                    document.getElementById('editor-container').classList.remove('hidden');
+                    
+                    // Populate editor
+                    document.getElementById('note-title').value = note.title;
+                    document.getElementById('editor').innerHTML = note.content;
+                    document.getElementById('note-date').textContent = new Date(note.updatedAt).toLocaleString();
+                    
+                    // Update word count
+                    this.updateWordCount();
+                    
+                    // Update tags
+                    this.updateNoteTagsDisplay();
+                    
+                    // Update pin button
+                    const pinBtn = document.getElementById('pin-note');
+                    pinBtn.innerHTML = note.pinned ? '<i data-feather="star" class="text-yellow-400 fill-yellow-400"></i>' : '<i data-feather="star"></i>';
+                    feather.replace();
+                    
+                    // Highlight selected note in list
+                    document.querySelectorAll('.note-card').forEach(el => {
+                        el.classList.remove('border-indigo-400', 'bg-indigo-50');
+                        if (el.dataset.id === noteId) {
+                            el.classList.add('border-indigo-400', 'bg-indigo-50');
+                        }
+                    });
+                },
+                
+                saveCurrentNote() {
+                    if (!this.currentNote) return;
+                    
+                    const title = document.getElementById('note-title').value;
+                    const content = document.getElementById('editor').innerHTML;
+                    
+                    this.currentNote.title = title;
+                    this.currentNote.content = content;
+                    this.currentNote.updatedAt = new Date().toISOString();
+                    
+                    this.saveNotes();
+                    this.loadNotes();
+                    this.updateStats();
+                    
+                    // Show save confirmation
+                    const saveBtn = document.getElementById('save-note');
+                    saveBtn.textContent = 'Saved!';
+                    saveBtn.classList.remove('bg-indigo-500', 'hover:bg-indigo-600');
+                    saveBtn.classList.add('bg-green-500', 'hover:bg-green-600');
+                    
+                    setTimeout(() => {
+                        saveBtn.textContent = 'Save';
+                        saveBtn.classList.remove('bg-green-500', 'hover:bg-green-600');
+                        saveBtn.classList.add('bg-indigo-500', 'hover:bg-indigo-600');
+                    }, 2000);
+                },
+                
+                deleteCurrentNote() {
+                    if (!this.currentNote || !confirm('Are you sure you want to delete this note?')) return;
+                    
+                    this.notes = this.notes.filter(n => n.id !== this.currentNote.id);
+                    this.saveNotes();
+                    this.currentNote = null;
+                    
+                    // Show empty state
+                    document.getElementById('empty-state').classList.remove('hidden');
+                    document.getElementById('editor-container').classList.add('hidden');
+                    
+                    this.loadNotes();
+                    this.updateStats();
+                },
+                
+                togglePinCurrentNote() {
+                    if (!this.currentNote) return;
+                    
+                    this.currentNote.pinned = !this.currentNote.pinned;
+                    this.currentNote.updatedAt = new Date().toISOString();
+                    
+                    this.saveNotes();
+                    this.loadNotes();
+                    
+                    // Update pin button
+                    const pinBtn = document.getElementById('pin-note');
+                    pinBtn.innerHTML = this.currentNote.pinned ? '<i data-feather="star" class="text-yellow-400 fill-yellow-400"></i>' : '<i data-feather="star"></i>';
+                    feather.replace();
+                },
+                
+                exportCurrentNote() {
+                    if (!this.currentNote) return;
+                    
+                    const title = this.currentNote.title || 'Untitled Note';
+                    const content = `
+                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                            <title>${title}</title>
+                            <style>
+                                body { font-family: sans-serif; line-height: 1.6; max-width: 800px; margin: 0 auto; padding: 20px; }
+                                h1 { color: #1e40af; border-bottom: 1px solid #e5e7eb; padding-bottom: 10px; }
+                                pre { background: #f3f4f6; padding: 15px; border-radius: 5px; overflow-x: auto; }
+                                blockquote { border-left: 4px solid #e5e7eb; padding-left: 15px; color: #6b7280; }
+                            </style>
+                        </head>
+                        <body>
+                            <h1>${title}</h1>
+                            <div>${this.currentNote.content}</div>
+                            <p style="color: #9ca3af; font-size: 0.875rem; margin-top: 30px;">
+                                Exported from Lumen Notes on ${new Date().toLocaleString()}
+                            </p>
+                        </body>
+                        </html>
+                    `;
+                    
+                    const blob = new Blob([content], { type: 'text/html' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.html`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                },
+                
+                searchNotes(query) {
+                    const notes = document.querySelectorAll('.note-card');
+                    const searchTerm = query.toLowerCase();
+                    
+                    notes.forEach(note => {
+                        const title = note.querySelector('h3').textContent.toLowerCase();
+                        const content = note.querySelector('p').textContent.toLowerCase();
+                        
+                        if (title.includes(searchTerm) || content.includes(searchTerm)) {
+                            note.style.display = 'block';
+                        } else {
+                            note.style.display = 'none';
+                        }
+                    });
+                },
+                
+                sortNotes(type) {
+                    if (type === 'title') {
+                        this.notes.sort((a, b) => {
+                            const titleA = a.title || 'Untitled Note';
+                            const titleB = b.title || 'Untitled Note';
+                            return titleA.localeCompare(titleB);
+                        });
+                    } else {
+                        this.notes.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+                    }
+                    
+                    // Keep pinned notes at the top
+                    this.notes.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
+                    
+                    this.saveNotes();
+                    this.loadNotes();
+                },
+                
+                applyFormatting(type) {
+                    const editor = document.getElementById('editor');
+                    const selection = window.getSelection();
+                    
+                    if (!selection.rangeCount) return;
+                    
+                    const range = selection.getRangeAt(0);
+                    const selectedText = range.toString();
+                    
+                    if (!selectedText) return;
+                    
+                    let formattedText = '';
+                    
+                    switch (type) {
+                        case 'bold':
+                            formattedText = `<strong>${selectedText}</strong>`;
+                            break;
+                        case 'italic':
+                            formattedText = `<em>${selectedText}</em>`;
+                            break;
+                        case 'heading':
+                            formattedText = `<h2>${selectedText}</h2>`;
+                            break;
+                        case 'quote':
+                            formattedText = `<blockquote>${selectedText}</blockquote>`;
+                            break;
+                        case 'code':
+                            formattedText = `<code>${selectedText}</code>`;
+                            break;
+                        case 'list':
+                            formattedText = `<ul><li>${selectedText}</li></ul>`;
+                            break;
+                        case 'numbered-list':
+                            formattedText = `<ol><li>${selectedText}</li></ol>`;
+                            break;
+                        case 'link':
+                            const url = prompt('Enter URL:', 'https://');
+                            if (url) {
+                                formattedText = `<a href="${url}" target="_blank" rel="noopener noreferrer">${selectedText}</a>`;
+                            } else {
+                                return;
+                            }
+                            break;
+                        case 'image':
+                            const imgUrl = prompt('Enter image URL:', 'https://');
+                            if (imgUrl) {
+                                formattedText = `<img src="${imgUrl}" alt="${selectedText}" style="max-width: 100%; border-radius: 0.375rem; margin: 0.5rem 0;">`;
+                            } else {
+                                return;
+                            }
+                            break;
+                    }
+                    
+                    range.deleteContents();
+                    range.insertNode(document.createRange().createContextualFragment(formattedText));
+                    
+                    // Focus back on editor
+                    editor.focus();
+                },
+                
+                updateWordCount() {
+                    if (!this.currentNote) return;
+                    
+                    const text = document.getElementById('editor').textContent;
+                    const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
+                    document.getElementById('word-count').textContent = `${wordCount} words`;
+                },
+                
+                loadTags() {
+                    const tagsContainer = document.getElementById('tags-container');
+                    tagsContainer.innerHTML = '';
+                    
+                    // Get all unique tags from notes
+                    const allTags = new Set();
+                    this.notes.forEach(note => {
+                        if (note.tags && note.tags.length) {
+                            note.tags.forEach(tag => allTags.add(tag));
+                        }
+                    });
+                    
+                    // Add user-defined tags
+                    this.tags.forEach(tag => allTags.add(tag));
+                    
+                    if (allTags.size === 0) {
+                        tagsContainer.innerHTML = '<p class="text-sm text-gray-400">No tags yet</p>';
+                        return;
+                    }
+                    
+                    Array.from(allTags).sort().forEach(tag => {
+                        const tagElement = document.createElement('span');
+                        tagElement.className = 'tag text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded-full cursor-pointer hover:bg-indigo-100 hover:text-indigo-700';
+                        tagElement.textContent = tag;
+                        tagElement.addEventListener('click', () => this.filterByTag(tag));
+                        tagsContainer.appendChild(tagElement);
+                    });
+                },
+                
+                createTag(tagName) {
+                    if (!tagName.trim()) return;
+                    
+                    const input = document.getElementById('new-tag-input');
+                    const normalizedTag = tagName.trim().toLowerCase();
+                    
+                    if (!this.tags.includes(normalizedTag)) {
+                        this.tags.push(normalizedTag);
+                        localStorage.setItem('lumen-tags', JSON.stringify(this.tags));
+                    }
+                    
+                    input.value = '';
+                    this.loadTags();
+                },
+                
+                addTagToCurrentNote(tagName) {
+                    if (!this.currentNote || !tagName.trim()) return;
+                    
+                    const input = document.getElementById('note-tags-input');
+                    const normalizedTag = tagName.trim().toLowerCase();
+                    
+                    if (!this.currentNote.tags) {
+                        this.currentNote.tags = [];
+                    }
+                    
+                    if (!this.currentNote.tags.includes(normalizedTag)) {
+                        this.currentNote.tags.push(normalizedTag);
+                        this.saveNotes();
+                        this.updateNoteTagsDisplay();
+                        
+                        // Add to global tags if not exists
+                        if (!this.tags.includes(normalizedTag)) {
+                            this.tags.push(normalizedTag);
+                            localStorage.setItem('lumen-tags', JSON.stringify(this.tags));
+                            this.loadTags();
+                        }
+                    }
+                    
+                    input.value = '';
+                },
+                
+                updateNoteTagsDisplay() {
+                    const container = document.getElementById('note-tags-container');
+                    container.innerHTML = '';
+                    
+                    if (!this.currentNote || !this.currentNote.tags || this.currentNote.tags.length === 0) {
+                        return;
+                    }
+                    
+                    this.currentNote.tags.forEach(tag => {
+                        const tagElement = document.createElement('span');
+                        tagElement.className = 'text-xs px-2 py-1 bg-indigo-100 text-indigo-700 rounded-full flex items-center';
+                        
+                        tagElement.innerHTML = `
+                            ${tag}
+                            <button data-tag="${tag}" class="ml-1 text-indigo-400 hover:text-indigo-700">
+                                <i data-feather="x" class="w-3 h-3"></i>
+                            </button>
+                        `;
+                        
+                        container.appendChild(tagElement);
+                    });
+                    
+                    feather.replace();
+                    
+                    // Add event listeners to remove buttons
+                    container.querySelectorAll('button').forEach(btn => {
+                        btn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            const tagToRemove = btn.dataset.tag;
+                            this.currentNote.tags = this.currentNote.tags.filter(t => t !== tagToRemove);
+                            this.saveNotes();
+                            this.updateNoteTagsDisplay();
+                        });
+                    });
+                },
+                
+                filterByTag(tag) {
+                    const notes = document.querySelectorAll('.note-card');
+                    
+                    notes.forEach(note => {
+                        const noteId = note.dataset.id;
+                        const matchedNote = this.notes.find(n => n.id === noteId);
+                        
+                        if (matchedNote && matchedNote.tags && matchedNote.tags.includes(tag)) {
+                            note.style.display = 'block';
+                        } else {
+                            note.style.display = 'none';
+                        }
+                    });
+                },
+                
+                toggleTheme() {
+                    this.darkMode = !this.darkMode;
+                    localStorage.setItem('lumen-dark-mode', this.darkMode);
+                    this.applyTheme();
+                },
+                
+                applyTheme() {
+                    const themeBtn = document.getElementById('theme-toggle');
+                    
+                    if (this.darkMode) {
+                        document.documentElement.classList.add('dark');
+                        themeBtn.innerHTML = '<i data-feather="sun" class="text-yellow-400"></i>';
+                    } else {
+                        document.documentElement.classList.remove('dark');
+                        themeBtn.innerHTML = '<i data-feather="moon" class="text-gray-600"></i>';
+                    }
+                    
+                    feather.replace();
+                },
+                
+                updateStats() {
+                    document.getElementById('total-notes').textContent = this.notes.length;
+                    
+                    let totalWords = 0;
+                    this.notes.forEach(note => {
+                        const text = note.content.replace(/<[^>]*>/g, '');
+                        totalWords += text.trim() ? text.trim().split(/\s+/).length : 0;
+                    });
+                    
+                    document.getElementById('total-words').textContent = totalWords;
+                },
+                
+                saveNotes() {
+                    localStorage.setItem('lumen-notes', JSON.stringify(this.notes));
+                }
+            };
+            
+            app.init();
+        });
+    </script>
+</body>
+</html>
